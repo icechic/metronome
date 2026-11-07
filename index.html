@@ -107,8 +107,8 @@ button.sel{background:var(--acc);color:#08210f;font-weight:600}
     <button class="main" id="play">开始</button>
     <div style="display:flex;gap:8px;width:100%">
       <button class="mini" id="tap">TAP 测速</button>
-      <button class="mini" id="minus">−5</button>
-      <button class="mini" id="plus">+5</button>
+      <button class="mini" id="minus">−3</button>
+      <button class="mini" id="plus">+3</button>
     </div>
   </div>
   <div class="status" id="status">点「开始」应有声音（静音开关需关闭）</div>
@@ -350,10 +350,10 @@ function buildMeters(){
     var active = p.custom ? customActive : (!customActive && meterLabel === p.label);
     b.className = 'mini' + (active ? ' sel' : '');
     b.style.cssText = 'flex:1 1 22%;min-width:0;padding:9px 2px;font-size:12.5px;border-radius:10px';
-    b.textContent = p.label;
+    b.textContent = (p.custom && customActive) ? pattern.join('+') : p.label;
+    b.style.fontSize = (p.custom && customActive && pattern.join('+').length > 5) ? '11px' : '12.5px';
     b.onclick = function(){
       if(p.custom){ openSheet(); return; }
-      meterLabel = p.label;
       customActive = false;
       applyGroups(p.groups);
     };
@@ -398,7 +398,7 @@ function buildSubs(){
 }
 
 function updateHint(){
-  hintEl.textContent = SUB_NAMES[sub] + ' · 每小节 ' + cells.length + ' 拍';
+  hintEl.textContent = SUB_NAMES[sub] + ' · 每小节 ' + cells.length + ' 拍 · 速度 80 分界 ±3/±4';
 }
 
 /* ================= 自定义分组面板 ================= */
@@ -532,6 +532,7 @@ function setBpm(v){
   $('slider').value = bpm;
   $('bpm').textContent = bpm;
   $('val').textContent = bpm;
+  if(typeof refreshStepLabels === 'function') refreshStepLabels();
 }
 $('slider').oninput = function(){ setBpm(parseInt(this.value, 10)); };
 $('vol').oninput = function(){
@@ -539,8 +540,27 @@ $('vol').oninput = function(){
   $('volv').textContent = this.value;
   if(master) master.gain.value = volume;
 };
-$('minus').onclick = function(){ setBpm(bpm - 5); };
-$('plus').onclick  = function(){ setBpm(bpm + 5); };
+/* 专业节拍器步进规则（老师给的规格）：
+   80 以下每次 ±3，80 及以上每次 ±4。
+   刻度表以 80 为共同基准：低档 80-3k（80、77、74…32），高档 80+4k（80、84、88…240），
+   所以边界永远不会出现 +2 / -2，来回切换都干净 */
+function nextBpm(dir){
+  if(dir > 0){
+    return bpm < 80 ? Math.min(80, bpm + 3) : Math.min(240, bpm + 4);
+  }
+  return bpm > 80 ? Math.max(80, bpm - 4) : Math.max(30, bpm - 3);
+}
+function refreshStepLabels(){
+  // 标签固定显示档位步进：80 以下 ±3，80 及以上 ±4（专业节拍器的刻度感）
+  $('plus').textContent  = '+' + (bpm < 80 ? 3 : 4);
+  $('minus').textContent = '−' + (bpm > 80 ? 4 : 3);
+  // 到端点时按钮变暗，避免"点了没反应"的困惑
+  var atTop = bpm >= 240, atBottom = bpm <= 30;
+  $('plus').style.opacity  = atTop ? .4 : 1;
+  $('minus').style.opacity = atBottom ? .4 : 1;
+}
+$('minus').onclick = function(){ if(bpm > 30) setBpm(nextBpm(-1)); };
+$('plus').onclick  = function(){ if(bpm < 240) setBpm(nextBpm(1)); };
 
 $('tap').onclick = function(){
   var t = performance.now();
@@ -558,8 +578,8 @@ $('tap').onclick = function(){
 document.addEventListener('keydown', function(e){
   if(e.target.tagName === 'INPUT') return;
   if(e.code === 'Space'){ e.preventDefault(); playing ? stop() : start(); }
-  if(e.key === 'ArrowUp'){ e.preventDefault(); setBpm(bpm+1); }
-  if(e.key === 'ArrowDown'){ e.preventDefault(); setBpm(bpm-1); }
+  if(e.key === 'ArrowUp'){ e.preventDefault(); setBpm(nextBpm(1)); }
+  if(e.key === 'ArrowDown'){ e.preventDefault(); setBpm(nextBpm(-1)); }
 });
 
 document.addEventListener('pointerdown', function(){
@@ -573,6 +593,7 @@ buildMeters();
 buildSubs();
 updateHint();
 updateStatus();
+refreshStepLabels();
 </script>
 </body>
 </html>
