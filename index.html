@@ -8,65 +8,73 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="节拍器">
 <meta name="theme-color" content="#0d0f14">
-<meta name="description" content="免费离线网页节拍器：30–240 BPM、拍号 2/4–6/4、每拍细分（八分/三连音/十六分/六连音）、TAP 测速。">
+<meta name="description" content="免费离线网页节拍器：30–240 BPM、常见拍号与复合分组（如 4+1+1+4）、每拍细分（八分/三连音/十六分）、TAP 测速。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="节拍器 · 免费离线版">
-<meta property="og:description" content="点开就能用的网页节拍器：30–240 BPM、2/4–6/4、八分/三连音/十六分细分，无广告、免安装。">
+<meta property="og:description" content="点开就能用的网页节拍器：30–240 BPM、2/4–6/4、复合分组、八分/三连音/十六分细分，无广告、免安装。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 <title>节拍器 · 免费离线版</title>
 <style>
-:root{--bg:#0d0f14;--fg:#e8ecf3;--dim:#8b93a3;--acc:#4ade80;--acc2:#fbbf24;}
+:root{--bg:#0d0f14;--fg:#e8ecf3;--dim:#8b93a3;--acc:#4ade80;--acc2:#fbbf24;--acc3:#60a5fa;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
   font-family:-apple-system,"PingFang SC",system-ui,sans-serif;overflow:hidden;user-select:none;}
-.wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:16px;}
-#bpm{font-size:78px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-3px;}
-.unit{font-size:12px;color:var(--dim);letter-spacing:4px;text-align:center;margin-top:6px}
-.beats{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:nowrap;min-height:20px}
-.beat{display:flex;gap:5px;align-items:center}
-.dot{width:13px;height:13px;border-radius:50%;background:#252a35;transition:background .05s,transform .05s}
+.wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px;}
+#bpm{font-size:74px;font-weight:200;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-3px;}
+.unit{font-size:12px;color:var(--dim);letter-spacing:4px;text-align:center;margin-top:5px}
+.beats{display:flex;align-items:center;justify-content:center;flex-wrap:nowrap;min-height:20px;gap:0}
+.group{display:flex;align-items:center;gap:5px}
+.group+.group{margin-left:15px;position:relative}
+.group+.group::before{content:'';position:absolute;left:-8px;top:50%;width:1px;height:15px;
+  margin-top:-7.5px;background:#2c3542}
+.unit1{display:flex;align-items:center;gap:4px}
+.dot{width:13px;height:13px;border-radius:50%;background:#252a35;transition:background .05s,transform .05s;flex:none}
+.dot.gp{background:#5a6879}
 .dot.on{background:var(--acc);transform:scale(1.45)}
 .dot.on.acc{background:var(--acc2)}
-.sdot{width:7px;height:7px;border-radius:50%;background:#252a35;transition:background .05s,transform .05s}
+.sdot{width:7px;height:7px;border-radius:50%;background:#252a35;transition:background .05s,transform .05s;flex:none}
 .sdot.on{background:#7f8fa6;transform:scale(1.4)}
 .sdot.on.acc{background:#a3b0c2}
-.row{display:flex;align-items:center;gap:12px;width:min(430px,92vw)}
-.row label{font-size:13px;color:var(--dim);width:52px;flex:none}
-input[type=range]{-webkit-appearance:none;flex:1;height:36px;background:transparent}
+.row{display:flex;align-items:center;gap:10px;width:min(430px,93vw)}
+.row label{font-size:13px;color:var(--dim);width:44px;flex:none}
+input[type=range]{-webkit-appearance:none;flex:1;height:34px;background:transparent}
 input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:#252a35}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-11px;
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-10px;
   border-radius:50%;background:var(--fg);box-shadow:0 2px 8px #000a}
-.val{width:52px;text-align:right;font-size:14px;color:var(--dim);font-variant-numeric:tabular-nums}
-.btns{display:flex;flex-direction:column;gap:9px;width:min(430px,92vw)}
-button{border:0;border-radius:14px;background:#1b2029;color:var(--fg);font-size:15px;
-  padding:13px 20px;font-family:inherit;transition:transform .07s,background .15s}
+.val{width:44px;text-align:right;font-size:14px;color:var(--dim);font-variant-numeric:tabular-nums}
+.btns{display:flex;flex-direction:column;gap:8px;width:min(430px,93vw)}
+button{border:0;border-radius:13px;background:#1b2029;color:var(--fg);font-size:15px;
+  padding:12px 18px;font-family:inherit;transition:transform .07s,background .15s}
 button:active{transform:scale(.96)}
-button.main{background:var(--acc);color:#08210f;font-weight:600;font-size:18px;padding:17px 46px;border-radius:20px;width:100%}
+button.main{background:var(--acc);color:#08210f;font-weight:600;font-size:18px;padding:16px 46px;border-radius:20px;width:100%}
 button.main.stop{background:#ef4444;color:#fff}
-button.mini{padding:11px 14px;font-size:13px;flex:1;min-width:0}
+button.mini{padding:10px 12px;font-size:13px;flex:1;min-width:0}
 button.sel{background:var(--acc);color:#08210f;font-weight:600}
-.subrow button{padding:9px 4px;font-size:13px}
-.hint{font-size:12px;color:#5d6472;text-align:center;line-height:1.7}
-.status{font-size:12px;padding:7px 14px;border-radius:999px;background:#161b23;color:#7d8698;border:1px solid #1f2632}
+.hint{font-size:12px;color:#5d6472;text-align:center;line-height:1.6}
+.status{font-size:12px;padding:6px 14px;border-radius:999px;background:#161b23;color:#7d8698;border:1px solid #1f2632}
 .status.ok{color:#4ade80;border-color:#1d3a28}
 .status.warn{color:#fbbf24;border-color:#3a2f13}
 .flash{position:fixed;inset:0;background:var(--acc);opacity:0;pointer-events:none;transition:opacity .12s}
 .flash.acc{background:var(--acc2)}
+.sheet{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:20px;z-index:9}
+.sheet.show{display:flex}
+.card{background:#151a22;border-radius:18px;padding:20px;width:min(360px,92vw);border:1px solid #232a36}
+.card h3{margin:0 0 6px;font-size:16px;font-weight:600}
+.card p{margin:0 0 14px;font-size:12px;color:var(--dim);line-height:1.6}
+.card input{width:100%;background:#0d1117;border:1px solid #2a3240;border-radius:11px;color:var(--fg);
+  font-size:20px;text-align:center;padding:12px;letter-spacing:2px;font-family:inherit}
+.card .btns2{display:flex;gap:9px;margin-top:13px}
+.card button{flex:1}
 @media (min-width:760px){
-  #bpm{font-size:120px}
-  .wrap{gap:18px}
-  .row,.btns{width:min(520px,92vw)}
+  #bpm{font-size:112px}
+  .row,.btns{width:min(520px,93vw)}
 }
-@media (max-height:760px){
-  .wrap{gap:8px;padding:10px}
-  #bpm{font-size:58px}
+@media (max-height:780px){
+  .wrap{gap:7px;padding:9px}
+  #bpm{font-size:54px}
   .hint{display:none}
-  button.main{padding:13px 40px;font-size:17px}
-  button.mini{padding:9px 12px}
-}
-@media (max-width:340px){
-  #bpm{font-size:64px}
-  .row label{width:44px;font-size:12px}
+  button.main{padding:12px 40px;font-size:17px}
+  button.mini{padding:8px 10px}
 }
 </style>
 </head>
@@ -97,35 +105,66 @@ button.sel{background:var(--acc);color:#08210f;font-weight:600}
   </div>
   <div class="btns">
     <button class="main" id="play">开始</button>
-    <div style="display:flex;gap:9px;width:100%">
+    <div style="display:flex;gap:8px;width:100%">
       <button class="mini" id="tap">TAP 测速</button>
       <button class="mini" id="minus">−5</button>
       <button class="mini" id="plus">+5</button>
     </div>
   </div>
   <div class="status" id="status">点「开始」应有声音（静音开关需关闭）</div>
-  <div class="hint" id="hint">细分 3 = 每拍三等分（三连音）· 细分 2 = 两个八分音符</div>
+  <div class="hint" id="hint">每拍 1 下（四分音符）</div>
 </div>
 <div class="flash" id="flash"></div>
+
+<div class="sheet" id="sheet">
+  <div class="card">
+    <h3>自定义分组</h3>
+    <p>用 + 连接每组拍数，例如 4+1+1+4（共 10 拍）、3+3+2、2+2+2+3、4+11+4（共 19 拍）。每组第一拍为组首重音，小节第一拍为最高重音。</p>
+    <input id="gin" type="text" inputmode="numeric" placeholder="4+1+1+4">
+    <div class="btns2">
+      <button class="mini" id="gcancel">取消</button>
+      <button class="mini" id="gok" style="background:var(--acc);color:#08210f;font-weight:600">确定</button>
+    </div>
+  </div>
+</div>
 <script>
 var AC = window.AudioContext || window.webkitAudioContext;
 var ctx = null, master = null;
-var bpm = 100, meter = 4, sub = 1, playing = false, volume = 0.7;
-var nextPerf = 0, curBeat = 0, curSub = 0, timerId = null, paintId = null;
+var bpm = 100, sub = 1, playing = false, volume = 0.7;
+var nextPerf = 0, timerId = null, paintId = null;
 var LOOKAHEAD_MS = 25, SCHEDULE_AHEAD = 0.12;
 var queue = [], tapTimes = [];
 var fbAccent = null, fbMain = null, fbSub = null;
 
+/* ===== 节奏模型 =====
+   groups = [4,1,1,4]：一小节分 4 组，各组分别有 4、1、1、4 拍
+   展开为 cells，每个 cell 记录所属组、是否组首；小节首拍为最高重音 */
+var pattern = [4];
+var cells = [];
+var curCell = 0, curSub = 0;
+var meterLabel = '4/4';
+var customActive = false;
+
+var PRESETS = [
+  {label:'2/4',     groups:[2]},
+  {label:'3/4',     groups:[3]},
+  {label:'4/4',     groups:[4]},
+  {label:'6/4',     groups:[6]},
+  {label:'3+3',     groups:[3,3]},
+  {label:'3+3+2',   groups:[3,3,2]},
+  {label:'4+1+1+4', groups:[4,1,1,4]},
+  {label:'自定义',   custom:true}
+];
+
 var $ = function(id){ return document.getElementById(id); };
 var dotsEl = $('dots'), flashEl = $('flash'), statusEl = $('status'), hintEl = $('hint');
 
-var SUB_LABELS = {1:'1', 2:'2', 3:'3', 4:'4', 6:'6'};
 var SUB_NAMES = {1:'每拍 1 下（四分音符）', 2:'每拍 2 等分（两个八分音符）',
   3:'每拍 3 等分（三连音）', 4:'每拍 4 等分（十六分音符）', 6:'每拍 6 等分（六连音）'};
 
 function nowSec(){ return performance.now() / 1000; }
 
-/* ================= 备用发声：把 click 预渲染成 WAV ================= */
+/* ================= 备用发声 ================= */
 function makeTickURI(freq, peak, dur, thump){
   var sr = 22050, n = Math.floor(sr * dur);
   var buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
@@ -152,9 +191,9 @@ function makeTickURI(freq, peak, dur, thump){
 function initFallback(){
   if(fbAccent) return;
   try{
-    fbAccent = new Audio(makeTickURI(2100, 0.95, 0.10, true));
-    fbMain   = new Audio(makeTickURI(1250, 0.60, 0.08, true));
-    fbSub    = new Audio(makeTickURI(1550, 0.30, 0.045, false));
+    fbAccent = new Audio(makeTickURI(2150, 0.95, 0.10, true));
+    fbMain   = new Audio(makeTickURI(1150, 0.58, 0.08, true));
+    fbSub    = new Audio(makeTickURI(1700, 0.26, 0.045, false));
     [fbAccent, fbMain, fbSub].forEach(function(a){ a.preload = 'auto'; });
   }catch(e){}
 }
@@ -170,7 +209,7 @@ function playFallback(which){
   }catch(e){}
 }
 
-/* ================= 主引擎：WebAudio ================= */
+/* ================= WebAudio ================= */
 function ensureCtx(){
   if(ctx || !AC) return;
   try{
@@ -198,14 +237,27 @@ function unlockAudio(){
   updateStatus();
 }
 
-function click(time, accent){
+/* level: 2=小节重音 1=组首 0=普通拍 3=细分音 */
+function click(time, level){
   if(!ctx || ctx.state !== 'running') return false;
+  if(level === 3){
+    var os=ctx.createOscillator(), gs=ctx.createGain();
+    os.type='sine'; os.frequency.value=1700;
+    gs.gain.setValueAtTime(0.0001, time);
+    gs.gain.exponentialRampToValueAtTime(0.26, time+0.002);
+    gs.gain.exponentialRampToValueAtTime(0.0001, time+0.032);
+    os.connect(gs); gs.connect(master);
+    os.start(time); os.stop(time+0.045);
+    return true;
+  }
+  var accent = (level === 2), strong = (level === 1);
+  var f = accent ? 2150 : (strong ? 1550 : 1150);
+  var peak = accent ? 1.0 : (strong ? 0.74 : 0.46);
   var o1=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain();
-  var f = accent ? 2100 : 1250;
   o1.type='square'; o1.frequency.value=f;
   o2.type='sine';   o2.frequency.value=f*0.5;
   g.gain.setValueAtTime(0.0001, time);
-  g.gain.exponentialRampToValueAtTime(accent?1.0:0.5, time+0.002);
+  g.gain.exponentialRampToValueAtTime(peak, time+0.002);
   g.gain.exponentialRampToValueAtTime(0.0001, time+0.05);
   o1.connect(g); o2.connect(g); g.connect(master);
   o1.start(time); o1.stop(time+0.08);
@@ -213,31 +265,16 @@ function click(time, accent){
 
   var o3=ctx.createOscillator(), g3=ctx.createGain();
   o3.type='sine';
-  o3.frequency.setValueAtTime(accent?190:150, time);
+  o3.frequency.setValueAtTime(accent?190:(strong?170:140), time);
   o3.frequency.exponentialRampToValueAtTime(62, time+0.055);
   g3.gain.setValueAtTime(0.0001, time);
-  g3.gain.exponentialRampToValueAtTime(accent?0.45:0.22, time+0.004);
+  g3.gain.exponentialRampToValueAtTime(accent?0.45:(strong?0.30:0.18), time+0.004);
   g3.gain.exponentialRampToValueAtTime(0.0001, time+0.075);
   o3.connect(g3); g3.connect(master);
   o3.start(time); o3.stop(time+0.09);
   return true;
 }
 
-/* 细分音符：短促轻音 */
-function subClick(time, lastOfBeat){
-  if(!ctx || ctx.state !== 'running') return false;
-  var o=ctx.createOscillator(), g=ctx.createGain();
-  o.type='sine';
-  o.frequency.value = lastOfBeat ? 1500 : 1700;
-  g.gain.setValueAtTime(0.0001, time);
-  g.gain.exponentialRampToValueAtTime(0.28, time+0.002);
-  g.gain.exponentialRampToValueAtTime(0.0001, time+0.035);
-  o.connect(g); g.connect(master);
-  o.start(time); o.stop(time+0.05);
-  return true;
-}
-
-/* ================= 状态条 ================= */
 function updateStatus(){
   if(!statusEl) return;
   if(ctx && ctx.state === 'running'){
@@ -254,62 +291,139 @@ statusEl.onclick = function(){
   updateStatus();
 };
 
-/* ================= 界面 ================= */
+/* ================= 构建节奏 ================= */
+function buildCells(groups){
+  cells = [];
+  var count = 0;
+  for(var gi=0; gi<groups.length; gi++){
+    for(var k=0; k<groups[gi]; k++){
+      cells.push({ group: gi, barBeat: count, groupStart: (k === 0) });
+      count++;
+    }
+  }
+}
+
+function cellAccent(ci){
+  var c = cells[ci];
+  if(!c) return 0;
+  if(c.barBeat === 0) return 2;
+  if(c.groupStart) return 1;
+  return 0;
+}
+
 function rebuildDots(){
   dotsEl.innerHTML = '';
-  var total = meter * sub;
-  dotsEl.style.gap = total > 24 ? '8px' : '14px';
-  for(var i=0;i<meter;i++){
-    var g = document.createElement('div');
-    g.className='beat';
-    g.style.gap = total > 24 ? '3px' : '5px';
-    for(var k=0;k<sub;k++){
+  var n = cells.length;
+  var total = n * sub;
+  var showSub = total <= 48;
+  var compact = total > 22;
+  var curGroup = -1, groupEl = null;
+  for(var i=0;i<n;i++){
+    if(cells[i].group !== curGroup){
+      curGroup = cells[i].group;
+      groupEl = document.createElement('div');
+      groupEl.className = 'group';
+      groupEl.style.gap = compact ? '3px' : '5px';
+      dotsEl.appendChild(groupEl);
+    }
+    var unit = document.createElement('div');
+    unit.className = 'unit1';
+    unit.style.gap = compact ? '2px' : '4px';
+    for(var k=0; k<(showSub ? sub : 1); k++){
       var d = document.createElement('div');
-      d.className = (k===0 ? 'dot' : 'sdot');
-      if(total > 24){
+      d.className = (k === 0 ? 'dot' : 'sdot');
+      if(k === 0 && dotsEl.children.length > 0 && groupEl.children.length === 0) d.className += ' gp';
+      if(compact){
         d.style.width = k===0 ? '9px' : '5px';
         d.style.height = k===0 ? '9px' : '5px';
       }
-      g.appendChild(d);
+      unit.appendChild(d);
     }
-    dotsEl.appendChild(g);
+    groupEl.appendChild(unit);
   }
 }
 
 function buildMeters(){
-  var box=$('meters'); box.innerHTML='';
-  for(var i=2;i<=6;i++){
-    (function(n){
-      var b=document.createElement('button');
-      b.className='mini'+(n===meter?' sel':'');
-      b.style.cssText='flex:1;min-width:0;padding:9px 2px;font-size:13px;border-radius:11px';
-      b.textContent=n+'/4';
-      b.onclick=function(){
-        meter=n; rebuildDots(); buildMeters();
-        if(playing){ curBeat=0; curSub=0; }
-      };
-      box.appendChild(b);
-    })(i);
+  var box = $('meters'); box.innerHTML = '';
+  PRESETS.forEach(function(p){
+    var b = document.createElement('button');
+    var active = p.custom ? customActive : (!customActive && meterLabel === p.label);
+    b.className = 'mini' + (active ? ' sel' : '');
+    b.style.cssText = 'flex:1 1 22%;min-width:0;padding:9px 2px;font-size:12.5px;border-radius:10px';
+    b.textContent = p.label;
+    b.onclick = function(){
+      if(p.custom){ openSheet(); return; }
+      meterLabel = p.label;
+      customActive = false;
+      applyGroups(p.groups);
+    };
+    box.appendChild(b);
+  });
+}
+
+function matchPreset(groups){
+  for(var i=0;i<PRESETS.length;i++){
+    var p = PRESETS[i];
+    if(p.groups && p.groups.join('+') === groups.join('+')) return p.label;
   }
+  return null;
+}
+
+function applyGroups(groups){
+  pattern = groups.slice();
+  var hit = matchPreset(groups);
+  if(hit){ meterLabel = hit; customActive = false; }
+  else { meterLabel = groups.join('+'); customActive = true; }
+  buildCells(groups);
+  curCell = 0; curSub = 0;
+  rebuildDots();
+  buildMeters();
+  updateHint();
+  if(playing){ queue.length = 0; nextPerf = nowSec() + 0.05; }
 }
 
 function buildSubs(){
-  var box=$('subs'); box.innerHTML='';
+  var box = $('subs'); box.innerHTML = '';
   [1,2,3,4,6].forEach(function(n){
-    var b=document.createElement('button');
-    b.className='mini'+(n===sub?' sel':'');
-    b.style.cssText='flex:1;min-width:0;padding:9px 2px;font-size:13px;border-radius:11px';
-    b.textContent = SUB_LABELS[n];
-    b.onclick=function(){
-      sub=n; rebuildDots(); buildSubs(); updateHint();
-      if(playing){ curSub=0; }
+    var b = document.createElement('button');
+    b.className = 'mini' + (n === sub ? ' sel' : '');
+    b.style.cssText = 'flex:1;min-width:0;padding:9px 2px;font-size:13px;border-radius:10px';
+    b.textContent = n;
+    b.onclick = function(){
+      sub = n; rebuildDots(); buildSubs(); updateHint();
+      if(playing){ curSub = 0; queue.length = 0; nextPerf = nowSec() + 0.05; }
     };
     box.appendChild(b);
   });
 }
 
 function updateHint(){
-  hintEl.textContent = SUB_NAMES[sub];
+  hintEl.textContent = SUB_NAMES[sub] + ' · 每小节 ' + cells.length + ' 拍';
+}
+
+/* ================= 自定义分组面板 ================= */
+var sheetEl = $('sheet'), ginEl = $('gin');
+$('gcancel').onclick = function(){ sheetEl.classList.remove('show'); };
+sheetEl.onclick = function(e){ if(e.target === sheetEl) sheetEl.classList.remove('show'); };
+$('gok').onclick = function(){
+  var parts = ginEl.value.trim().toUpperCase()
+    .split('+').map(function(x){ return parseInt(x, 10); })
+    .filter(function(x){ return x > 0 && x <= 32; });
+  var sum = parts.reduce(function(a,b){ return a+b; }, 0);
+  if(!parts.length || sum > 40){
+    ginEl.style.borderColor = '#ef4444';
+    setTimeout(function(){ ginEl.style.borderColor = '#2a3240'; }, 1200);
+    return;
+  }
+  meterLabel = parts.join('+');
+  customActive = true;
+  applyGroups(parts);
+  sheetEl.classList.remove('show');
+};
+function openSheet(){
+  ginEl.value = pattern.join('+');
+  sheetEl.classList.add('show');
+  setTimeout(function(){ ginEl.focus(); }, 120);
 }
 
 /* ================= 调度 ================= */
@@ -320,16 +434,15 @@ function scheduler(){
   while(nextPerf < now + SCHEDULE_AHEAD){
     var delay = Math.max(0, nextPerf - now);
     var isMain = (curSub === 0);
-    var isAccent = isMain && (curBeat === 0);
+    var level = isMain ? cellAccent(curCell) : 3;
     var played = false;
     if(ctx && ctx.state === 'running'){
-      played = isMain ? click(ctx.currentTime + delay + 0.005, isAccent)
-                      : subClick(ctx.currentTime + delay + 0.005, curSub === sub - 1);
+      played = click(ctx.currentTime + delay + 0.005, level);
     }
-    queue.push({t: nextPerf, b: curBeat, s: curSub, main: isMain, acc: isAccent, fb: !played});
+    queue.push({t: nextPerf, c: curCell, s: curSub, main: isMain, lv: level, fb: !played});
     nextPerf += stepDur();
     curSub++;
-    if(curSub >= sub){ curSub = 0; curBeat = (curBeat + 1) % meter; }
+    if(curSub >= sub){ curSub = 0; curCell = (curCell + 1) % cells.length; }
   }
 }
 
@@ -338,27 +451,38 @@ function paintTick(){
   var now = nowSec();
   while(queue.length && queue[0].t <= now){
     var q = queue.shift();
-    if(q.fb) playFallback(q.acc ? 'acc' : (q.main ? 'main' : 'sub'));
-    paintBeat(q.b, q.s, q.main, q.acc);
+    if(q.fb) playFallback(q.lv === 2 ? 'acc' : (q.lv === 3 ? 'sub' : 'main'));
+    paintBeat(q.c, q.s, q.main, q.lv);
   }
 }
 
 var flashTimer = null;
-function paintBeat(b, sIdx, isMain, isAccent){
-  var groups = dotsEl.children;
-  for(var i=0;i<groups.length;i++){
-    var kids = groups[i].children;
-    for(var k=0;k<kids.length;k++){
-      var mainDot = (k === 0);
-      var on = (i === b) && (mainDot ? sIdx === 0 : sIdx === k);
-      var cls = mainDot ? 'dot' : 'sdot';
-      if(on) cls += ' on' + (i === 0 && mainDot ? ' acc' : '');
+function paintBeat(ci, sIdx, isMain, level){
+  var cell = cells[ci];
+  if(!cell) return;
+  var gEl = dotsEl.children[cell.group];
+  if(!gEl) return;
+  var idxInGroup = 0;
+  for(var i = ci - 1; i >= 0 && cells[i].group === cell.group; i--) idxInGroup++;
+  var units = gEl.children;
+  for(var u=0; u<units.length; u++){
+    var kids = units[u].children;
+    for(var k=0; k<kids.length; k++){
+      var isBeatDot = (k === 0);
+      var on = (u === idxInGroup) && (isBeatDot ? sIdx === 0 : sIdx === k);
+      var cls = isBeatDot ? 'dot' : 'sdot';
+      if(isBeatDot && idxInGroup === 0) cls += ' gp';
+      if(on){
+        cls += ' on';
+        if(isBeatDot && cell.barBeat === 0) cls += ' acc';
+      }
       kids[k].className = cls;
     }
   }
   if(isMain){
-    flashEl.className = 'flash' + (isAccent ? ' acc' : '');
-    flashEl.style.opacity = isAccent ? 0.18 : 0.09;
+    var strong = (level === 2);
+    flashEl.className = 'flash' + (strong ? ' acc' : '');
+    flashEl.style.opacity = strong ? 0.18 : (level === 1 ? 0.10 : 0.06);
     clearTimeout(flashTimer);
     flashTimer = setTimeout(function(){ flashEl.style.opacity = 0; }, 70);
   }
@@ -367,7 +491,7 @@ function paintBeat(b, sIdx, isMain, isAccent){
 function start(){
   unlockAudio();
   playing = true;
-  curBeat = 0; curSub = 0;
+  curCell = 0; curSub = 0;
   queue.length = 0;
   nextPerf = nowSec() + 0.1;
   $('play').textContent = '停止';
@@ -390,8 +514,11 @@ function stop(){
   $('play').classList.remove('stop');
   var groups = dotsEl.children;
   for(var i=0;i<groups.length;i++){
-    var kids = groups[i].children;
-    for(var k=0;k<kids.length;k++) kids[k].className = (k===0 ? 'dot' : 'sdot');
+    var units = groups[i].children;
+    for(var u=0;u<units.length;u++){
+      var kids = units[u].children;
+      for(var k=0;k<kids.length;k++) kids[k].className = (k===0 ? 'dot' : 'sdot');
+    }
   }
   flashEl.style.opacity = 0;
   updateStatus();
@@ -406,10 +533,9 @@ function setBpm(v){
   $('bpm').textContent = bpm;
   $('val').textContent = bpm;
 }
-
-$('slider').oninput = function(){ setBpm(parseInt(this.value,10)); };
+$('slider').oninput = function(){ setBpm(parseInt(this.value, 10)); };
 $('vol').oninput = function(){
-  volume = parseInt(this.value,10)/100;
+  volume = parseInt(this.value, 10)/100;
   $('volv').textContent = this.value;
   if(master) master.gain.value = volume;
 };
@@ -430,6 +556,7 @@ $('tap').onclick = function(){
 };
 
 document.addEventListener('keydown', function(e){
+  if(e.target.tagName === 'INPUT') return;
   if(e.code === 'Space'){ e.preventDefault(); playing ? stop() : start(); }
   if(e.key === 'ArrowUp'){ e.preventDefault(); setBpm(bpm+1); }
   if(e.key === 'ArrowDown'){ e.preventDefault(); setBpm(bpm-1); }
@@ -439,6 +566,8 @@ document.addEventListener('pointerdown', function(){
   if(!ctx || ctx.state !== 'running') unlockAudio();
 }, true);
 
+/* ================= 初始化 ================= */
+buildCells([4]);
 rebuildDots();
 buildMeters();
 buildSubs();
@@ -447,4 +576,3 @@ updateStatus();
 </script>
 </body>
 </html>
-
