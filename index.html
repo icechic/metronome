@@ -103,12 +103,18 @@ button.sel{background:var(--acc);color:#08210f;font-weight:600}
     <input type="range" id="vol" min="0" max="100" step="1" value="70">
     <div class="val" id="volv">70</div>
   </div>
+  <div class="row">
+    <label>音色</label>
+    <div style="flex:1;display:flex;gap:6px" id="tones"></div>
+  </div>
   <div class="btns">
     <button class="main" id="play">开始</button>
-    <div style="display:flex;gap:8px;width:100%">
-      <button class="mini" id="tap">TAP 测速</button>
-      <button class="mini" id="minus">−3</button>
-      <button class="mini" id="plus">+3</button>
+    <div style="display:flex;gap:6px;width:100%">
+      <button class="mini" id="tap" style="flex:1.5">TAP</button>
+      <button class="mini" id="m4">−4</button>
+      <button class="mini" id="m3">−3</button>
+      <button class="mini" id="p3">+3</button>
+      <button class="mini" id="p4">+4</button>
     </div>
   </div>
   <div class="status" id="status">点「开始」应有声音（静音开关需关闭）</div>
@@ -135,6 +141,8 @@ var nextPerf = 0, timerId = null, paintId = null;
 var LOOKAHEAD_MS = 25, SCHEDULE_AHEAD = 0.12;
 var queue = [], tapTimes = [];
 var fbAccent = null, fbMain = null, fbSub = null;
+var tone = 'click';   // 'click' | 'wood'（木鱼）
+var TONE_NAMES = {click:'点击', wood:'木鱼'};
 
 /* ===== 节奏模型 =====
    groups = [4,1,1,4]：一小节分 4 组，各组分别有 4、1、1、4 拍
@@ -164,43 +172,94 @@ var SUB_NAMES = {1:'每拍 1 下（四分音符）', 2:'每拍 2 等分（两个
 
 function nowSec(){ return performance.now() / 1000; }
 
-/* ================= 备用发声 ================= */
-function makeTickURI(freq, peak, dur, thump){
-  var sr = 22050, n = Math.floor(sr * dur);
+/* ================= 备用发声（预渲染 WAV，供 <audio> 播放） =================
+   没有 WebAudio 的环境（部分内置浏览器/旧 Safari）也能出声，且支持木鱼音色 */
+function makeWavURI(kind, level){
+  var sr = 22050;
+  var accent = (level === 2), strong = (level === 1), isSub = (level === 3);
+  var dur, gen;
+
+  if(kind === 'wood'){
+    // 木鱼：木质共鸣（两个失谐三角波）+ 敲击噪声，衰减快
+    dur = isSub ? 0.05 : 0.16;
+    var base = accent ? 900 : (strong ? 720 : 560);
+    if(isSub) base = 1050;
+    var scale = accent ? 1.0 : (strong ? 0.8 : (isSub ? 0.55 : 0.62));
+    gen = function(t){
+      if(t > dur) return 0;
+      var env1 = Math.exp(-t * (isSub ? 70 : 32));
+      var env2 = Math.exp(-t * (isSub ? 90 : 58));
+      var s1 = Math.sin(2*Math.PI*base*t) * 0.62;
+      var s2 = Math.sin(2*Math.PI*base*1.58*t) * 0.26 * (isSub ? 0 : 1);
+      var s3 = Math.sin(2*Math.PI*base*0.82*t) * 0.18;
+      // 敲击瞬态：极短噪声
+      var noise = (Math.random()*2 - 1) * Math.exp(-t * 420) * 0.5;
+      return (s1 + s2 + s3) * env1 * 0.9 + noise * env2 * (isSub ? 0.5 : 1) * scale;
+    };
+  } else {
+    // 点击：电子音，方形+正弦
+    dur = isSub ? 0.05 : 0.11;
+    var f = accent ? 2150 : (strong ? 1550 : 1150);
+    if(isSub) f = 1700;
+    var pk = accent ? 0.95 : (strong ? 0.74 : (isSub ? 0.26 : 0.46));
+    gen = function(t){
+      if(t > dur) return 0;
+      var env = Math.exp(-t * (isSub ? 75 : 46));
+      var sq = Math.sign(Math.sin(2*Math.PI*f*t)) * 0.5;
+      var si = Math.sin(2*Math.PI*f*0.5*t) * 0.5;
+      var body = Math.sin(2*Math.PI*(accent?190:(strong?170:140))*t) * Math.exp(-t*38) * 0.5;
+      return (sq * 0.55 + si * 0.35 + body) * env * pk;
+    };
+  }
+
+  var n = Math.floor(sr * dur);
   var buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
   function ws(off, str){ for(var i=0;i<str.length;i++) v.setUint8(off+i, str.charCodeAt(i)); }
   ws(0,'RIFF'); v.setUint32(4, 36 + n*2, true); ws(8,'WAVE');
   ws(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
   v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
   ws(36,'data'); v.setUint32(40, n*2, true);
+  // 先算出峰值，再归一化到 0.86，避免削波失真
+  var samples = new Float32Array(n), peak = 0;
   for(var i=0;i<n;i++){
-    var t = i/sr;
-    var env = Math.exp(-t * (thump ? 42 : 70));
-    var sig = Math.sin(2*Math.PI*freq*t)*0.72
-            + Math.sin(2*Math.PI*freq*0.5*t)*0.28
-            + Math.sin(2*Math.PI*freq*1.6*t)*0.15;
-    if(thump) sig += Math.sin(2*Math.PI*90*t)*0.5*Math.exp(-t*40);
-    var val = Math.max(-1, Math.min(1, sig*env*peak));
-    v.setInt16(44 + i*2, val*0x7fff, true);
+    var val = gen(i / sr);
+    samples[i] = val;
+    var a = Math.abs(val);
+    if(a > peak) peak = a;
+  }
+  var norm = peak > 0 ? 0.86 / peak : 1;
+  for(var j=0;j<n;j++){
+    var q = Math.max(-1, Math.min(1, samples[j] * norm));
+    v.setInt16(44 + j*2, q * 0x7fff, true);
   }
   var bytes = new Uint8Array(buf), bin = '';
   for(var k=0;k<bytes.length;k++) bin += String.fromCharCode(bytes[k]);
   return 'data:audio/wav;base64,' + btoa(bin);
 }
 
-function initFallback(){
-  if(fbAccent) return;
+/* 缓存：按 音色+级别 生成，最多 8 个 */
+var fbCache = {};
+function fbAudio(kind, level){
+  var key = kind + level;
+  if(fbCache[key]) return fbCache[key];
   try{
-    fbAccent = new Audio(makeTickURI(2150, 0.95, 0.10, true));
-    fbMain   = new Audio(makeTickURI(1150, 0.58, 0.08, true));
-    fbSub    = new Audio(makeTickURI(1700, 0.26, 0.045, false));
-    [fbAccent, fbMain, fbSub].forEach(function(a){ a.preload = 'auto'; });
-  }catch(e){}
+    var a = new Audio(makeWavURI(kind, level));
+    a.preload = 'auto';
+    fbCache[key] = a;
+    return a;
+  }catch(e){ return null; }
+}
+
+function initFallback(){
+  // 预热常用档位
+  fbAudio('click', 2); fbAudio('click', 0); fbAudio('click', 3);
+  fbAudio('wood', 2);  fbAudio('wood', 0);  fbAudio('wood', 3);
 }
 
 function playFallback(which){
-  initFallback();
-  var a = which === 'acc' ? fbAccent : (which === 'main' ? fbMain : fbSub);
+  // which: 'acc' | 'main' | 'sub'
+  var level = which === 'acc' ? 2 : (which === 'sub' ? 3 : 0);
+  var a = fbAudio(tone, level);
   if(!a) return;
   try{
     a.currentTime = 0;
@@ -237,8 +296,69 @@ function unlockAudio(){
   updateStatus();
 }
 
+
+/* ============ 木鱼音色 ============
+   木鱼 = 脆的瞬态敲击 + 短促的木板共鸣腔（两个略失谐的共振峰）+ 一点噪声
+   频率越高越尖（重音），音量按 level 分级 */
+function woodClick(time, level){
+  if(!ctx || ctx.state !== 'running') return false;
+  var accent = (level === 2), strong = (level === 1);
+  var base = accent ? 900 : (strong ? 720 : 560);   // 共鸣主频
+  var gainScale = accent ? 1.0 : (strong ? 0.8 : 0.62);
+  var isSub = (level === 3);
+
+  if(isSub){
+    // 细分音：更轻更短的一声"嗒"
+    var o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(1050, time);
+    o.frequency.exponentialRampToValueAtTime(760, time+0.012);
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(0.22, time+0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, time+0.030);
+    o.connect(g); g.connect(master);
+    o.start(time); o.stop(time+0.04);
+    return true;
+  }
+
+  // 主敲击：两个共振峰（木腔）+ 快速衰减
+  var freqs = [base, base * 1.58];
+  var amps  = [1.0, 0.42];
+  var decays= [26, 46];
+  for(var i=0;i<freqs.length;i++){
+    (function(f, a, d){
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(f, time);
+      o.frequency.exponentialRampToValueAtTime(f * 0.82, time + 0.045);
+      g.gain.setValueAtTime(0.0001, time);
+      g.gain.exponentialRampToValueAtTime(Math.min(1, a * gainScale), time + 0.0025);
+      g.gain.exponentialRampToValueAtTime(0.0001, time + (1 / d) * 3.2);
+      o.connect(g); g.connect(master);
+      o.start(time); o.stop(time + (1/d)*3.4 + 0.02);
+    })(freqs[i], amps[i], decays[i]);
+  }
+
+  // 敲击瞬态：一小撮高频噪声，模拟木头被敲到的"咔"
+  var dur = 0.018;
+  var buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+  var data = buf.getChannelData(0);
+  for(var n=0;n<data.length;n++){
+    data[n] = (Math.random()*2 - 1) * Math.pow(1 - n/data.length, 2.5);
+  }
+  var src = ctx.createBufferSource();
+  src.buffer = buf;
+  var bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = base * 2.4; bp.Q.value = 1.1;
+  var ng = ctx.createGain();
+  ng.gain.value = accent ? 0.30 : (strong ? 0.22 : 0.15);
+  src.connect(bp); bp.connect(ng); ng.connect(master);
+  src.start(time);
+  return true;
+}
+
 /* level: 2=小节重音 1=组首 0=普通拍 3=细分音 */
 function click(time, level){
+  if(tone === 'wood') return woodClick(time, level);
   if(!ctx || ctx.state !== 'running') return false;
   if(level === 3){
     var os=ctx.createOscillator(), gs=ctx.createGain();
@@ -382,6 +502,29 @@ function applyGroups(groups){
   if(playing){ queue.length = 0; nextPerf = nowSec() + 0.05; }
 }
 
+
+function buildTones(){
+  var box = $('tones'); box.innerHTML = '';
+  ['click','wood'].forEach(function(t){
+    var b = document.createElement('button');
+    b.className = 'mini' + (t === tone ? ' sel' : '');
+    b.style.cssText = 'flex:1;min-width:0;padding:9px 2px;font-size:13px;border-radius:10px';
+    b.textContent = TONE_NAMES[t];
+    b.onclick = function(){
+      tone = t;
+      buildTones();
+      if(playing){ /* 下一拍自动生效 */ }
+      // 立刻给一声样例，方便老师挑
+      unlockAudio();
+      if(ctx && ctx.state === 'running') click(ctx.currentTime + 0.03, 0);
+      else playFallback('main');
+      // 双保险：WebAudio 不可用时也能听到试听
+      if(!(ctx && ctx.state === 'running')) playFallback('main');
+    };
+    box.appendChild(b);
+  });
+}
+
 function buildSubs(){
   var box = $('subs'); box.innerHTML = '';
   [1,2,3,4,6].forEach(function(n){
@@ -398,7 +541,7 @@ function buildSubs(){
 }
 
 function updateHint(){
-  hintEl.textContent = SUB_NAMES[sub] + ' · 每小节 ' + cells.length + ' 拍 · 速度 80 分界 ±3/±4';
+  hintEl.textContent = SUB_NAMES[sub] + ' · 每小节 ' + cells.length + ' 拍 · 步进 −4 −3 ＋3 ＋4';
 }
 
 /* ================= 自定义分组面板 ================= */
@@ -550,17 +693,21 @@ function nextBpm(dir){
   }
   return bpm > 80 ? Math.max(80, bpm - 4) : Math.max(30, bpm - 3);
 }
-function refreshStepLabels(){
-  // 标签固定显示档位步进：80 以下 ±3，80 及以上 ±4（专业节拍器的刻度感）
-  $('plus').textContent  = '+' + (bpm < 80 ? 3 : 4);
-  $('minus').textContent = '−' + (bpm > 80 ? 4 : 3);
-  // 到端点时按钮变暗，避免"点了没反应"的困惑
-  var atTop = bpm >= 240, atBottom = bpm <= 30;
-  $('plus').style.opacity  = atTop ? .4 : 1;
-  $('minus').style.opacity = atBottom ? .4 : 1;
+function stepBy(d){
+  setBpm(bpm + d);
 }
-$('minus').onclick = function(){ if(bpm > 30) setBpm(nextBpm(-1)); };
-$('plus').onclick  = function(){ if(bpm < 240) setBpm(nextBpm(1)); };
+function refreshStepLabels(){
+  // 四个固定档位按钮，随时可用；到端点变暗
+  var atTop = bpm >= 240, atBottom = bpm <= 30;
+  $('p3').style.opacity = atTop ? .4 : 1;
+  $('p4').style.opacity = atTop ? .4 : 1;
+  $('m3').style.opacity = atBottom ? .4 : 1;
+  $('m4').style.opacity = atBottom ? .4 : 1;
+}
+$('m4').onclick = function(){ if(bpm > 30) stepBy(-4); };
+$('m3').onclick = function(){ if(bpm > 30) stepBy(-3); };
+$('p3').onclick = function(){ if(bpm < 240) stepBy(3); };
+$('p4').onclick = function(){ if(bpm < 240) stepBy(4); };
 
 $('tap').onclick = function(){
   var t = performance.now();
@@ -578,8 +725,8 @@ $('tap').onclick = function(){
 document.addEventListener('keydown', function(e){
   if(e.target.tagName === 'INPUT') return;
   if(e.code === 'Space'){ e.preventDefault(); playing ? stop() : start(); }
-  if(e.key === 'ArrowUp'){ e.preventDefault(); setBpm(nextBpm(1)); }
-  if(e.key === 'ArrowDown'){ e.preventDefault(); setBpm(nextBpm(-1)); }
+  if(e.key === 'ArrowUp'){ e.preventDefault(); stepBy(bpm < 80 ? 3 : 4); }
+  if(e.key === 'ArrowDown'){ e.preventDefault(); stepBy(bpm > 80 ? -4 : -3); }
 });
 
 document.addEventListener('pointerdown', function(){
@@ -591,6 +738,7 @@ buildCells([4]);
 rebuildDots();
 buildMeters();
 buildSubs();
+buildTones();
 updateHint();
 updateStatus();
 refreshStepLabels();
