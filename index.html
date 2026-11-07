@@ -56,15 +56,6 @@ button.sel{background:var(--acc);color:#08210f;font-weight:600}
 .status.warn{color:#fbbf24;border-color:#3a2f13}
 .flash{position:fixed;inset:0;background:var(--acc);opacity:0;pointer-events:none;transition:opacity .12s}
 .flash.acc{background:var(--acc2)}
-.sheet{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:20px;z-index:9}
-.sheet.show{display:flex}
-.card{background:#151a22;border-radius:18px;padding:20px;width:min(360px,92vw);border:1px solid #232a36}
-.card h3{margin:0 0 6px;font-size:16px;font-weight:600}
-.card p{margin:0 0 14px;font-size:12px;color:var(--dim);line-height:1.6}
-.card input{width:100%;background:#0d1117;border:1px solid #2a3240;border-radius:11px;color:var(--fg);
-  font-size:20px;text-align:center;padding:12px;letter-spacing:2px;font-family:inherit}
-.card .btns2{display:flex;gap:9px;margin-top:13px}
-.card button{flex:1}
 @media (min-width:760px){
   #bpm{font-size:112px}
   .row,.btns{width:min(520px,93vw)}
@@ -122,17 +113,7 @@ button.sel{background:var(--acc);color:#08210f;font-weight:600}
 </div>
 <div class="flash" id="flash"></div>
 
-<div class="sheet" id="sheet">
-  <div class="card">
-    <h3>自定义分组</h3>
-    <p>用 + 连接每组拍数，例如 4+1+1+4（共 10 拍）、3+3+2、2+2+2+3、4+11+4（共 19 拍）。每组第一拍为组首重音，小节第一拍为最高重音。</p>
-    <input id="gin" type="text" inputmode="numeric" placeholder="4+1+1+4">
-    <div class="btns2">
-      <button class="mini" id="gcancel">取消</button>
-      <button class="mini" id="gok" style="background:var(--acc);color:#08210f;font-weight:600">确定</button>
-    </div>
-  </div>
-</div>
+
 <script>
 var AC = window.AudioContext || window.webkitAudioContext;
 var ctx = null, master = null;
@@ -154,15 +135,11 @@ var meterLabel = '4/4';
 var customActive = false;
 
 var PRESETS = [
-  {label:'1/4',     groups:[1]},
-  {label:'2/4',     groups:[2]},
-  {label:'3/4',     groups:[3]},
-  {label:'4/4',     groups:[4]},
-  {label:'6/4',     groups:[6]},
-  {label:'3+3',     groups:[3,3]},
-  {label:'3+3+2',   groups:[3,3,2]},
-  {label:'4+1+1+4', groups:[4,1,1,4]},
-  {label:'自定义',   custom:true}
+  {label:'1/4', groups:[1]},
+  {label:'2/4', groups:[2]},
+  {label:'3/4', groups:[3]},
+  {label:'4/4', groups:[4]},
+  {label:'6/4', groups:[6]}
 ];
 
 var $ = function(id){ return document.getElementById(id); };
@@ -476,14 +453,11 @@ function buildMeters(){
   var box = $('meters'); box.innerHTML = '';
   PRESETS.forEach(function(p){
     var b = document.createElement('button');
-    var active = p.custom ? customActive : (!customActive && meterLabel === p.label);
+    var active = (meterLabel === p.label);
     b.className = 'mini' + (active ? ' sel' : '');
-    b.style.cssText = 'flex:1 1 30%;min-width:0;padding:8px 2px;font-size:12.5px;border-radius:10px';
-    b.textContent = (p.custom && customActive) ? pattern.join('+') : p.label;
-    b.style.fontSize = (p.custom && customActive && pattern.join('+').length > 5) ? '11px' : '12.5px';
+    b.style.cssText = 'flex:1;min-width:0;padding:9px 2px;font-size:13px;border-radius:10px';
+    b.textContent = p.label;
     b.onclick = function(){
-      if(p.custom){ openSheet(); return; }
-      customActive = false;
       applyGroups(p.groups);
     };
     box.appendChild(b);
@@ -551,31 +525,6 @@ function buildSubs(){
 
 function updateHint(){
   hintEl.textContent = SUB_NAMES[sub] + ' · 每小节 ' + cells.length + ' 拍 · 步进 −4 −3 ＋3 ＋4';
-}
-
-/* ================= 自定义分组面板 ================= */
-var sheetEl = $('sheet'), ginEl = $('gin');
-$('gcancel').onclick = function(){ sheetEl.classList.remove('show'); };
-sheetEl.onclick = function(e){ if(e.target === sheetEl) sheetEl.classList.remove('show'); };
-$('gok').onclick = function(){
-  var parts = ginEl.value.trim().toUpperCase()
-    .split('+').map(function(x){ return parseInt(x, 10); })
-    .filter(function(x){ return x > 0 && x <= 32; });
-  var sum = parts.reduce(function(a,b){ return a+b; }, 0);
-  if(!parts.length || sum > 40){
-    ginEl.style.borderColor = '#ef4444';
-    setTimeout(function(){ ginEl.style.borderColor = '#2a3240'; }, 1200);
-    return;
-  }
-  meterLabel = parts.join('+');
-  customActive = true;
-  applyGroups(parts);
-  sheetEl.classList.remove('show');
-};
-function openSheet(){
-  ginEl.value = pattern.join('+');
-  sheetEl.classList.add('show');
-  setTimeout(function(){ ginEl.focus(); }, 120);
 }
 
 /* ================= 调度 ================= */
